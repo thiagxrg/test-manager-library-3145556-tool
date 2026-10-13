@@ -74,14 +74,17 @@ const main = async () => {
   console.log(`Members: ${memberIds.length}`);
 
   let createdLoans = 0;
-  for (let i = 0; i < LOANS_COUNT && createdLoans < LOANS_COUNT; i++) {
-    const member = memberIds[i % memberIds.length];
-    const bookA = bookIds[i % bookIds.length];
-    const bookB = bookIds[(i + 7) % bookIds.length];
-    const items = [{ book_id: bookA }];
-    if (bookA !== bookB) items.push({ book_id: bookB });
+  const memberActive = Array(MEMBERS_COUNT).fill(0);
+  let attempts = 0;
+  while (createdLoans < LOANS_COUNT && attempts < LOANS_COUNT * 5) {
+    attempts++;
+    const memberIndex = memberActive.findIndex((count) => count < 3);
+    if (memberIndex === -1) break;
+    const member = memberIds[memberIndex];
+    const bookId = bookIds[(createdLoans * 7) % bookIds.length];
     try {
-      await req('POST', '/loans', { member_id: member, items }, token);
+      await req('POST', '/loans', { member_id: member, items: [{ book_id: bookId }] }, token);
+      memberActive[memberIndex] += 1;
       createdLoans++;
     } catch (e) {
       console.log(`Loan skipped: ${e.message}`);
